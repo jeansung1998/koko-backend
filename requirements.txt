@@ -2,8 +2,4 @@ flask
 clawops
 requests
 gunicorn
-flask-sock
-openai
-anthropic
-gevent
-gevent-websocket
+pipecat-ai[silero,twilio,elevenlabs,anthropic]

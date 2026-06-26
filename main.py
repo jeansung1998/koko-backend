@@ -20,7 +20,7 @@ openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
 anthropic_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 
 CLAWOPS_FROM = "07052753884"
-BASE_URL = os.environ.get("RAILWAY_URL", "http://localhost:8000")
+BASE_URL = os.environ.get("RAILWAY_URL", "https://api.wondanmarket.com")
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
 VOICE_ID = "onwK4e9ZLuTAKqWW03F9"
 
