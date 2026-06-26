@@ -91,12 +91,13 @@ def twiml():
     call_id = request.args.get("id", "")
     data = call_scripts.get(call_id, {})
     intro = data.get("intro", "안녕하세요. 코코입니다.")
+    ws_url = BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://')
 
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say language="ko-KR">{intro}</Say>
   <Connect>
-    <Stream url="wss://{BASE_URL.replace('https://', '')}/stream?id={call_id}"/>
+    <Stream url="{ws_url}/stream?id={call_id}"/>
   </Connect>
 </Response>"""
     return Response(xml, mimetype="text/xml")
