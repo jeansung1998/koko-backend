@@ -1,31 +1,30 @@
 from flask import Flask, request, Response
-import requests
 import os
+from clawops import ClawOps
 
 app = Flask(__name__)
 
-CLAWOPS_API_KEY = os.environ.get("CLAWOPS_API_KEY", "")
-CLAWOPS_ACCOUNT_ID = os.environ.get("CLAWOPS_ACCOUNT_ID", "ACac4j80utqXeSeK9w")
+client = ClawOps(
+    api_key=os.environ.get("CLAWOPS_API_KEY", ""),
+    account_id=os.environ.get("CLAWOPS_ACCOUNT_ID", ""),
+)
+
 CLAWOPS_FROM = "07052753884"
 BASE_URL = os.environ.get("RAILWAY_URL", "http://localhost:8000")
 
 @app.route("/call", methods=["POST"])
 def make_call():
     data = request.json
-    to = data.get("to")
+    to = data.get("to", "").replace("-", "").replace("+82", "0")
     script = data.get("script", "안녕하세요. 코코입니다.")
 
-    response = requests.post(
-        "https://api.claw-ops.com/v1/calls",
-        headers={"Authorization": f"Bearer {CLAWOPS_API_KEY}"},
-        json={
-            "to": to,
-            "from": CLAWOPS_FROM,
-            "url": f"{BASE_URL}/twiml?script={requests.utils.quote(script)}",
-            "account_id": CLAWOPS_ACCOUNT_ID,
-        }
+    import urllib.parse
+    call = client.calls.create(
+        to=to,
+        from_=CLAWOPS_FROM,
+        url=f"{BASE_URL}/twiml?script={urllib.parse.quote(script)}",
     )
-    return response.json()
+    return {"call_id": call.call_id, "status": "initiated"}
 
 @app.route("/twiml", methods=["GET", "POST"])
 def twiml():
