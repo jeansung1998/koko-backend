@@ -14,12 +14,17 @@ client = ClawOps(
 CLAWOPS_FROM = "07052753884"
 BASE_URL = os.environ.get("RAILWAY_URL", "http://localhost:8000")
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
-VOICE_ID = "onwK4e9ZLuTAKqWW03F9"  # Daniel - 한국어 지원
+VOICE_ID = "onwK4e9ZLuTAKqWW03F9"
 
 scripts = {}
 audio_cache = {}
 
-def generate_tts(text, call_id):
+def split_sentences(text):
+    import re
+    sentences = re.split(r'(?<=[.!?。]) +', text.strip())
+    return [s for s in sentences if s]
+
+def generate_tts(text, audio_id):
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
     headers = {
         "xi-api-key": ELEVENLABS_API_KEY,
@@ -32,7 +37,7 @@ def generate_tts(text, call_id):
     }
     response = requests.post(url, headers=headers, json=body)
     if response.status_code == 200:
-        audio_cache[call_id] = response.content
+        audio_cache[audio_id] = response.content
         return True
     return False
 
@@ -43,8 +48,15 @@ def make_call():
     script = data.get("script", "안녕하세요. 코코입니다.")
 
     call_id = str(uuid.uuid4())[:8]
-    scripts[call_id] = script
-    generate_tts(script, call_id)
+    sentences = split_sentences(script)
+    
+    audio_ids = []
+    for i, sentence in enumerate(sentences):
+        audio_id = f"{call_id}_{i}"
+        generate_tts(sentence, audio_id)
+        audio_ids.append(audio_id)
+    
+    scripts[call_id] = audio_ids
 
     call = client.calls.create(
         to=to,
@@ -56,25 +68,27 @@ def make_call():
 @app.route("/twiml", methods=["GET", "POST"])
 def twiml():
     call_id = request.args.get("id", "")
+    audio_ids = scripts.get(call_id, [])
     
-    if call_id in audio_cache:
-        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+    play_tags = ""
+    for audio_id in audio_ids:
+        if audio_id in audio_cache:
+            play_tags += f'<Play>{BASE_URL}/audio?id={audio_id}</Play>\n'
+    
+    if not play_tags:
+        play_tags = '<Say language="ko-KR">안녕하세요. 코코입니다.</Say>'
+
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Play>{BASE_URL}/audio?id={call_id}</Play>
-</Response>"""
-    else:
-        script = scripts.get(call_id, "안녕하세요. 코코입니다.")
-        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Say language="ko-KR">{script}</Say>
+{play_tags}
 </Response>"""
     return Response(xml, mimetype="text/xml")
 
 @app.route("/audio", methods=["GET"])
 def audio():
-    call_id = request.args.get("id", "")
-    if call_id in audio_cache:
-        audio_data = audio_cache[call_id]
+    audio_id = request.args.get("id", "")
+    if audio_id in audio_cache:
+        audio_data = audio_cache[audio_id]
         return Response(
             audio_data,
             mimetype="audio/mpeg",
