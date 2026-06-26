@@ -1,5 +1,6 @@
 from flask import Flask, request, Response
 import os
+import urllib.parse
 from clawops import ClawOps
 
 app = Flask(__name__)
@@ -12,23 +13,29 @@ client = ClawOps(
 CLAWOPS_FROM = "07052753884"
 BASE_URL = os.environ.get("RAILWAY_URL", "http://localhost:8000")
 
+scripts = {}
+
 @app.route("/call", methods=["POST"])
 def make_call():
     data = request.json
     to = data.get("to", "").replace("-", "").replace("+82", "0")
     script = data.get("script", "안녕하세요. 코코입니다.")
 
-    import urllib.parse
+    import uuid
+    call_id = str(uuid.uuid4())[:8]
+    scripts[call_id] = script
+
     call = client.calls.create(
         to=to,
         from_=CLAWOPS_FROM,
-        url=f"{BASE_URL}/twiml?script={urllib.parse.quote(script)}",
+        url=f"{BASE_URL}/twiml?id={call_id}",
     )
     return {"call_id": call.call_id, "status": "initiated"}
 
 @app.route("/twiml", methods=["GET", "POST"])
 def twiml():
-    script = request.args.get("script", "안녕하세요. 코코입니다.")
+    call_id = request.args.get("id", "")
+    script = scripts.get(call_id, "안녕하세요. 코코입니다.")
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Say language="ko-KR">{script}</Say>
