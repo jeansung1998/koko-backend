@@ -2,3 +2,6 @@ flask
 clawops
 requests
 gunicorn
+flask-sock
+openai
+anthropic
