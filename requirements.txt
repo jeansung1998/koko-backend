@@ -3,4 +3,6 @@ flask_sock
 clawops
 requests
 gunicorn
+gevent
+gevent-websocket
 pipecat-ai[silero,twilio,elevenlabs,anthropic]
