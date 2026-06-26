@@ -2,4 +2,4 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "gunicorn main:app --bind 0.0.0.0:$PORT"
+startCommand = "gunicorn main:app --bind 0.0.0.0:$PORT --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --timeout 300"

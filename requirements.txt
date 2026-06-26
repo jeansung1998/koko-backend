@@ -5,3 +5,5 @@ gunicorn
 flask-sock
 openai
 anthropic
+gevent
+gevent-websocket
