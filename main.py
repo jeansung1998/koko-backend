@@ -74,7 +74,12 @@ def twiml():
 def audio():
     call_id = request.args.get("id", "")
     if call_id in audio_cache:
-        return Response(audio_cache[call_id], mimetype="audio/mpeg")
+        audio_data = audio_cache[call_id]
+        return Response(
+            audio_data,
+            mimetype="audio/mpeg",
+            headers={"Content-Length": len(audio_data)}
+        )
     return "Not found", 404
 
 if __name__ == "__main__":
