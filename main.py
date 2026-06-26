@@ -14,7 +14,7 @@ client = ClawOps(
 CLAWOPS_FROM = "07052753884"
 BASE_URL = os.environ.get("RAILWAY_URL", "http://localhost:8000")
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
-VOICE_ID = "XrExE9yKIg1WjnnlVkGX"  # 한국어 잘하는 Matilda 음성
+VOICE_ID = "onwK4e9ZLuTAKqWW03F9"  # Daniel - 한국어 지원
 
 scripts = {}
 audio_cache = {}
