@@ -44,10 +44,15 @@ def generate_tts_bytes(text):
     return None
 
 def stt(audio_bytes):
-    import tempfile
+    import tempfile, audioop, wave
+    # ulaw → pcm 변환
+    pcm_bytes = audioop.ulaw2lin(audio_bytes, 2)
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-        f.write(audio_bytes)
-        f.flush()
+        with wave.open(f.name, 'wb') as wav:
+            wav.setnchannels(1)
+            wav.setsampwidth(2)
+            wav.setframerate(8000)
+            wav.writeframes(pcm_bytes)
         with open(f.name, "rb") as audio_file:
             transcript = openai_client.audio.transcriptions.create(
                 model="whisper-1",
@@ -148,7 +153,7 @@ def stream(ws):
             continue
 
         if event.get("event") == "start":
-            stream_sid = event.get("start", {}).get("streamId")
+            stream_sid = event.get("start", {}).get("streamId") or event.get("streamSid")
 
         elif event.get("event") == "media":
             payload = event.get("media", {}).get("payload", "")
