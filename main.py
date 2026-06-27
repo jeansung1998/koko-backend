@@ -27,21 +27,17 @@ VOICE_ID = "onwK4e9ZLuTAKqWW03F9"
 call_scripts = {}
 
 def generate_tts_bytes(text):
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-    headers = {
-        "xi-api-key": ELEVENLABS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    body = {
-        "text": text,
-        "model_id": "eleven_multilingual_v2",
-        "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
-        "output_format": "ulaw_8000"
-    }
-    response = requests.post(url, headers=headers, json=body)
-    if response.status_code == 200:
-        return response.content
-    return None
+    response = openai_client.audio.speech.create(
+        model="tts-1",
+        voice="nova",
+        input=text,
+        response_format="pcm"
+    )
+    # PCM → ulaw 변환
+    import audioop
+    pcm_bytes = response.content
+    ulaw_bytes = audioop.lin2ulaw(pcm_bytes, 2)
+    return ulaw_bytes
 
 def stt(audio_bytes):
     import tempfile, audioop, wave
