@@ -53,9 +53,14 @@ def make_call():
             "model": "gpt-realtime",
             "api_key": os.environ.get("OPENAI_API_KEY", ""),
             "voice": "marin",
+            "language": "ko",
             "messages": [{"role": "system", "content": system_prompt}],
+            "greeting": True,
+            "turn_detection": {
+                "type": "semantic_vad",
+                "eagerness": "medium"
+            }
         },
-    )
     return {"call_id": call.call_id, "status": "initiated"}
 
 @app.route("/health", methods=["GET"])
