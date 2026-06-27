@@ -110,6 +110,7 @@ def twiml():
 @sock.route("/stream")
 def stream(ws):
     call_id = request.args.get("id", "")
+    print(f"✅ Stream 연결됨: {call_id}")
     data = call_scripts.get(call_id, {})
     system_prompt = data.get("system_prompt", "당신은 친절한 AI 전화 대리 서비스입니다. 짧고 자연스럽게 대화하세요.")
 
@@ -122,10 +123,12 @@ def stream(ws):
         try:
             msg = ws.receive(timeout=1)
         except Exception:
+            print("❌ WebSocket 종료")
             break
 
         if msg is None:
             silence_count += 1
+            print(f"🔇 침묵: {silence_count}, 버퍼: {len(audio_buffer)}")
             if silence_count >= SILENCE_THRESHOLD and len(audio_buffer) > 0:
                 # 음성 처리
                 try:
