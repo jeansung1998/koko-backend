@@ -53,7 +53,6 @@ def make_call():
             "model": "gpt-realtime",
             "api_key": os.environ.get("OPENAI_API_KEY", ""),
             "voice": "marin",
-            "language": "ko",
             "messages": [{"role": "system", "content": system_prompt}],
         },
     )
