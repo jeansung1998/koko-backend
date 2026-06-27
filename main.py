@@ -121,20 +121,41 @@ def stream(ws):
 
     while True:
         try:
-            msg = ws.receive(timeout=1)
-        except Exception:
-            print("❌ WebSocket 종료")
+            msg = ws.receive()
+            if msg is None:
+                print("❌ msg None, 종료")
+                break
+        except Exception as e:
+            print(f"❌ 예외: {e}")
             break
 
-        if msg is None:
-            silence_count += 1
-            print(f"🔇 침묵: {silence_count}, 버퍼: {len(audio_buffer)}")
-            if silence_count >= SILENCE_THRESHOLD and len(audio_buffer) > 0:
-                # 음성 처리
+        try:
+            event = json.loads(msg)
+        except Exception:
+            continue
+
+        print(f"📨 이벤트: {event.get('event')}")
+
+        if event.get("event") == "start":
+            stream_sid = event.get("start", {}).get("streamId") or event.get("streamSid")
+            print(f"🎬 stream_sid: {stream_sid}")
+
+        elif event.get("event") == "media":
+            payload = event.get("media", {}).get("payload", "")
+            audio_buffer.extend(base64.b64decode(payload))
+            print(f"🎵 오디오 버퍼: {len(audio_buffer)} bytes")
+
+        elif event.get("event") == "stop":
+            print("🛑 stop 이벤트")
+            # 여기서 처리
+            if len(audio_buffer) > 0:
                 try:
+                    print("🔄 STT 시작")
                     text = stt(bytes(audio_buffer))
+                    print(f"📝 STT 결과: {text}")
                     if text.strip():
                         response_text = ask_claude(text, system_prompt)
+                        print(f"🤖 Claude: {response_text}")
                         tts_audio = generate_tts_bytes(response_text)
                         if tts_audio and stream_sid:
                             payload = base64.b64encode(tts_audio).decode("utf-8")
@@ -144,25 +165,7 @@ def stream(ws):
                                 "media": {"payload": payload}
                             }))
                 except Exception as e:
-                    print(f"처리 오류: {e}")
-                audio_buffer.clear()
-                silence_count = 0
-            continue
-
-        silence_count = 0
-        try:
-            event = json.loads(msg)
-        except Exception:
-            continue
-
-        if event.get("event") == "start":
-            stream_sid = event.get("start", {}).get("streamId") or event.get("streamSid")
-
-        elif event.get("event") == "media":
-            payload = event.get("media", {}).get("payload", "")
-            audio_buffer.extend(base64.b64decode(payload))
-
-        elif event.get("event") == "stop":
+                    print(f"❌ 처리 오류: {e}")
             break
 
 if __name__ == "__main__":
