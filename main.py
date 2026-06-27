@@ -1,23 +1,14 @@
 # ============================================================
 # KOKO AI 전화대리 서비스 백엔드
 # ============================================================
-# [성공 확인된 것들]
-# - ClawOps 070번호로 발신 성공
-# - api.wondanmarket.com 커스텀 도메인 연결됨
-# - GitHub 자동배포 연결됨
-# ============================================================
-
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import os
-from clawops import ClawOps
+import requests
 
 app = Flask(__name__)
 
-clawops_client = ClawOps(
-    api_key=os.environ.get("CLAWOPS_API_KEY", ""),
-    account_id=os.environ.get("CLAWOPS_ACCOUNT_ID", ""),
-)
-
+CLAWOPS_API_KEY = os.environ.get("CLAWOPS_API_KEY", "")
+CLAWOPS_ACCOUNT_ID = os.environ.get("CLAWOPS_ACCOUNT_ID", "")
 CLAWOPS_FROM = "07052753884"
 
 @app.route("/call", methods=["POST"])
@@ -26,24 +17,32 @@ def make_call():
     to = data.get("to", "").replace("-", "").replace("+82", "0")
     system_prompt = data.get("system_prompt", "당신은 친절한 AI 전화 대리 서비스 코코입니다. 짧고 자연스럽게 대화하세요.")
 
-    call = clawops_client.calls.create(
-        to=to,
-        from_=CLAWOPS_FROM,
-        ai={
-            "provider": "openai",
-            "model": "gpt-realtime",
-            "api_key": os.environ.get("OPENAI_API_KEY", ""),
-            "voice": "marin",
-            "language": "ko",
-            "messages": [{"role": "system", "content": system_prompt}],
-            "greeting": True,
-            "turn_detection": {
-                "type": "semantic_vad",
-                "eagerness": "medium"
+    # ClawOps REST API 직접 호출 (CamelCase 필수)
+    response = requests.post(
+        f"https://api.claw-ops.com/v1/accounts/{CLAWOPS_ACCOUNT_ID}/calls",
+        headers={
+            "Authorization": f"Bearer {CLAWOPS_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "To": to,
+            "From": CLAWOPS_FROM,
+            "AI": {
+                "Provider": "openai",
+                "Model": "gpt-realtime",
+                "ApiKey": os.environ.get("OPENAI_API_KEY", ""),
+                "Voice": "marin",
+                "Language": "ko",
+                "Greeting": True,
+                "Messages": [
+                    {"role": "system", "content": system_prompt}
+                ]
             }
         }
     )
-    return {"call_id": call.call_id, "status": "initiated"}
+
+    result = response.json()
+    return jsonify({"call_id": result.get("callId", ""), "status": "initiated"})
 
 @app.route("/health", methods=["GET"])
 def health():
